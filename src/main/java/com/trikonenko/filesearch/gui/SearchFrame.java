@@ -2,6 +2,7 @@ package com.trikonenko.filesearch.gui;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.util.List;
 
 import javax.swing.*;
@@ -14,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SearchApp extends JFrame {
+public class SearchFrame extends JFrame {
 
     @Autowired
     private FileSearchService fileSearchService;
@@ -23,13 +24,37 @@ public class SearchApp extends JFrame {
     private JTable searchResultsTable;
     private DefaultTableModel searchTableModel;
 
-
-    public SearchApp() {
+    public SearchFrame() {
         initUI();
     }
 
     private void initUI() {
+        JPanel indexPanel = createIndexPanel();
+        JPanel searchPanel = getSearchPanel();
+        createResultsTable();
 
+        JPanel content = new JPanel(new BorderLayout(8,8));
+        content.setBorder(BorderFactory.createEmptyBorder(8,8,8,8));
+        content.add(new JScrollPane(searchResultsTable));
+        content.add(indexPanel, BorderLayout.PAGE_START);
+        content.add(searchPanel, BorderLayout.PAGE_END);
+
+        setLayout(new BorderLayout());
+        add(content);
+        setTitle("File search app");
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        pack();
+    }
+
+    private void createResultsTable() {
+        String[][] data = { };
+        String[] columns = { "ID", "NAME", "PATH" };
+        searchTableModel = new DefaultTableModel(data, columns);
+        searchResultsTable = new JTable(searchTableModel);
+    }
+
+    private JPanel getSearchPanel() {
         JButton searchButton = new JButton("Search");
         searchButton.setAction(searchFileAction);
         searchTextField = new JTextField(30);
@@ -38,33 +63,27 @@ public class SearchApp extends JFrame {
         JPanel searchPanel = new JPanel();
         searchPanel.add(searchButton);
         searchPanel.add(searchTextField);
-
-        String[][] data ={};
-        String[] columns ={"ID","NAME","PATH"};
-        searchTableModel = new DefaultTableModel(data, columns);
-        searchResultsTable = new JTable(searchTableModel);
-
-        JPanel content = new JPanel(new BorderLayout(8,8));
-        content.setBorder(BorderFactory.createEmptyBorder(8,8,8,8));
-        content.add(new JScrollPane(searchResultsTable));
-        content.add(searchPanel, BorderLayout.PAGE_END);
-
-        createLayout(content);
-
-        setTitle("File search app");
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        pack();
+        return searchPanel;
     }
 
+    private JPanel createIndexPanel() {
+        JFileChooser directoryToBeIndexedChooser = new JFileChooser();
+        directoryToBeIndexedChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        directoryToBeIndexedChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
 
-    private void createLayout(JComponent... arg) {
-        Container pane = getContentPane();
-        GroupLayout groupLayout = new GroupLayout(pane);
-        pane.setLayout(groupLayout);
-        groupLayout.setAutoCreateContainerGaps(true);
-        groupLayout.setHorizontalGroup(groupLayout.createSequentialGroup().addComponent(arg[0]));
-        groupLayout.setVerticalGroup(groupLayout.createSequentialGroup().addComponent(arg[0]));
+        JButton indexDirButton = new JButton("Index documents");
+        indexDirButton.setAction(new AbstractAction("Index documents") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int result = directoryToBeIndexedChooser.showOpenDialog(null);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    fileSearchService.indexDirectory(directoryToBeIndexedChooser.getSelectedFile());
+                }
+            }
+        });
+        JPanel indexPanel = new JPanel();
+        indexPanel.add(indexDirButton, BorderLayout.LINE_START);
+        return indexPanel;
     }
 
     Action searchFileAction = new AbstractAction("Search file") {

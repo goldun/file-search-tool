@@ -9,5 +9,4 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 public interface FilesRepo extends PagingAndSortingRepository<FileEntity, Integer> {
 
     List<FileEntity> findByNameContainsOrPathContainsOrContentContains(String name, String path, String content);
-
 }
